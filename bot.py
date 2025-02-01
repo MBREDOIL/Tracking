@@ -34,14 +34,22 @@ class TrackBot(Client):
         self.browser = None
         self.context = None
     
+
     async def start(self):
-        await super().start()
-        self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch()
-        self.context = await self.browser.new_context()
-        await self.init_db()
-        self.setup_scheduler()
-        print("Bot Started!")
+    await super().start()
+    
+    # Ensure Playwright is properly initialized
+    self.playwright = await async_playwright().start()
+    
+    # Launch Chromium with explicit executable path
+    self.browser = await self.playwright.chromium.launch(
+        executable_path=os.getenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH")
+    )
+    
+    self.context = await self.browser.new_context()
+    await self.init_db()
+    self.setup_scheduler()
+    print("Bot Started!")
     
     async def stop(self):
         await self.context.close()
