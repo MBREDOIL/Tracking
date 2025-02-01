@@ -1,4 +1,3 @@
-# Dockerfile
 FROM python:3.9-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -9,19 +8,30 @@ ENV PYTHONUNBUFFERED=1 \
     DB_NAME="tracker.db" \
     CHECK_INTERVAL=300
 
+# Install system dependencies with clean up
 RUN apt-get update && apt-get install -y \
-    wget unzip curl chromium chromium-driver \
+    wget \
+    unzip \
+    curl \
+    chromium \
+    chromium-driver \
+    gcc \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN CHROME_VERSION=$(chromium --version | grep -oP '\d+\.\d+\.\d+') \
-    && CHROMEDRIVER_VERSION=$(curl -s https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION%.*}) \
-    && wget -q -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip \
+# Install ChromeDriver matching Chromium version
+RUN CHROME_VERSION=$(chromium --version | awk '{print $2}') \
+    && CHROME_MAJOR_VERSION=$(echo $CHROME_VERSION | cut -d. -f1) \
+    && CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_MAJOR_VERSION") \
+    && wget -q -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip" \
     && unzip /tmp/chromedriver.zip -d /usr/bin/ \
     && rm /tmp/chromedriver.zip \
     && chmod +x /usr/bin/chromedriver
 
 WORKDIR /app
 COPY . .
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 CMD ["python", "bot.py"]
