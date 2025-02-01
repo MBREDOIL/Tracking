@@ -23,11 +23,9 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Install Cython and aiohttp dependencies first
 RUN pip install --upgrade pip
-
-# Install aiohttp separately
-RUN pip install aiohttp
+RUN pip install Cython==0.29.24 multidict==5.1.0 yarl==1.6.3
 
 # Install the remaining dependencies from requirements.txt
 RUN pip install -r requirements.txt
@@ -35,7 +33,7 @@ RUN pip install -r requirements.txt
 # Install Chrome and WebDriver for Selenium
 RUN apt-get update && apt-get install -y \
     google-chrome-stable \
-    && wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$(wget -q -O https://chromedriver.storage.googleapis.com/LATEST_RELEASE)/chromedriver_linux64.zip \
+    && wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$(wget -q -O - https://chromedriver.storage.googleapis.com/LATEST_RELEASE)/chromedriver_linux64.zip \
     && unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/ \
     && rm /tmp/chromedriver.zip \
     && apt-get clean \
