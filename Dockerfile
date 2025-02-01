@@ -32,10 +32,9 @@ RUN pip install --no-cache-dir -r requirements.txt && \
     rm -rf /root/.cache/pip
 
 # Install Playwright browsers and check installation path
-RUN mkdir -p /ms-playwright && chmod -R 777 /ms-playwright && \
-    playwright install chromium && \
+RUN playwright install chromium && \
     playwright install-deps chromium && \
-    ls /ms-playwright/chromium-1105/chrome-linux/
+    ls /root/.cache/ms-playwright/chromium-1105/chrome-linux/
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
