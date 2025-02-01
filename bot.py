@@ -1,4 +1,5 @@
 #==========u==========
+from os import environ
 import asyncio
 import hashlib
 import aiohttp
@@ -12,8 +13,8 @@ from datetime import datetime, timedelta
 import re
 
 # Configuration
-TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
-OWNER_ID = 123456789  # Your Telegram User ID
+TOKEN = environ.get("TOKEN", "")
+OWNER_ID = 6556141430  # Your Telegram User ID
 ADMIN_ROLES = ['owner', 'admin']
 DB_NAME = "tracker.db"
 REQUEST_TIMEOUT = 15
