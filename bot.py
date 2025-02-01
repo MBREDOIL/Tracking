@@ -11,7 +11,10 @@ from urllib.parse import urlparse
 
 from pyrogram import Client, filters
 from pyrogram.types import Message, InputMediaPhoto, InlineKeyboardMarkup, InlineKeyboardButton
-from playwright.async_api import async_playwright
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 
 # Configuration
@@ -30,27 +33,24 @@ class TrackBot(Client):
             api_hash=API_HASH,
             bot_token=BOT_TOKEN
         )
-        self.playwright = None
         self.browser = None
-        self.context = None
 
     async def start(self):
         await super().start()
-        # Ensure Playwright
-        self.playwright = await async_playwright().start()
-        # Launch Chromium with explicit executable path
-        self.browser = await self.playwright.chromium.launch(
-            executable_path=os.getenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH")
-        )
-        self.context = await self.browser.new_context()
+        
+        # Initialize Selenium WebDriver
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        self.browser = webdriver.Chrome(service=ChromeService(), options=chrome_options)
+
         await self.init_db()
         await self.setup_scheduler()
         print("Bot Started!")
 
     async def stop(self):
-        await self.context.close()
-        await self.browser.close()
-        await self.playwright.stop()
+        self.browser.quit()
         await super().stop()
 
     async def init_db(self):
@@ -138,42 +138,20 @@ class TrackBot(Client):
                     print(f"Error processing {url}: {str(e)}")
 
     async def get_website_data(self, url: str, mode: str, selector: str = None):
-        if mode == 'element':
-            page = await self.context.new_page()
-            try:
-                await page.goto(url, timeout=60000)
-                await page.wait_for_load_state("networkidle")
+        self.browser.get(url)
 
-                result = {}
-                if selector:
-                    element = await page.query_selector(selector)
-                    if element:
-                        result['content'] = await element.inner_text()
-                        result['screenshot'] = await element.screenshot(type="jpeg")
-                    else:
-                        return {"error": "Element not found"}
-                else:
-                    result['content'] = await page.content()
-                    result['screenshot'] = await page.screenshot(full_page=True, type="jpeg")
-                return result
-            finally:
-                await page.close()
-        else:
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(url) as response:
-                        response.raise_for_status()
-                        html = await response.text()
-                        soup = BeautifulSoup(html, 'html.parser')
-
-                        if selector:
-                            elements = soup.select(selector)
-                            content = "\n".join([e.get_text() for e in elements])
-                        else:
-                            content = html
-                        return {"content": content}
-            except Exception as e:
-                return {"error": str(e)}
+        result = {}
+        try:
+            if mode == 'element' and selector:
+                element = self.browser.find_element(By.CSS_SELECTOR, selector)
+                result['content'] = element.text
+                result['screenshot'] = element.screenshot_as_png
+            else:
+                result['content'] = self.browser.page_source
+                result['screenshot'] = self.browser.get_screenshot_as_png()
+            return result
+        except Exception as e:
+            return {"error": str(e)}
 
 app = TrackBot()
 
@@ -283,7 +261,7 @@ async def is_owner(user_id: int) -> bool:
         cursor = await db.execute('SELECT role FROM admins WHERE user_id=?', (user_id,))
         result = await cursor.fetchone()
         return result and result[0] == 'owner' if result else False
-
+        
 async def is_admin(user_id: int) -> bool:
     async with aiosqlite.connect(DB_NAME) as db:
         cursor = await db.execute('SELECT 1 FROM admins WHERE user_id=?', (user_id,))
