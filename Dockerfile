@@ -42,4 +42,4 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 WORKDIR /app
 COPY . .
 
-CMD ["python", "final_bot.py"]
+CMD ["python", "bot.py"]
