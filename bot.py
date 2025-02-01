@@ -44,6 +44,8 @@ class TrackBot(Client):
         self.start_time = datetime.now()
         self.silent_mode = {}
 
+    app = TrackBot()
+
     async def start(self):
         await super().start()
         chrome_options = Options()
