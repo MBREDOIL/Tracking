@@ -1,5 +1,5 @@
 #==========u==========
-import os
+from os import environ
 import hashlib
 import aiohttp
 import aiosqlite
