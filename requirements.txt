@@ -1,5 +1,6 @@
 pyrogram 
 tgcrypto
+difflib
 playwright==1.42.0
 aiohttp==3.9.3
 aiosqlite==0.20.0
