@@ -28,7 +28,9 @@ RUN apt-get update && apt-get install -y \
 
 # Install Python dependencies
 RUN pip install --upgrade pip
-RUN pip install Cython==0.29.24 multidict==5.1.0 yarl==1.6.3
+
+# Install pre-built binary versions of problematic dependencies
+RUN pip install --only-binary :all: aiohttp==3.8.1
 
 # Install the remaining dependencies from requirements.txt
 RUN pip install -r requirements.txt
@@ -47,3 +49,4 @@ COPY . /app
 
 # Set the entrypoint command to run the bot
 CMD ["python", "bot.py"]
+
