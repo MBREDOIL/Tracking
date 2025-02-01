@@ -1,7 +1,6 @@
-# Use official Python image with Playwright dependencies
 FROM python:3.11-slim-bullseye
 
-# Install system dependencies for Playwright and monitoring tools
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
@@ -29,21 +28,14 @@ RUN apt-get update && apt-get install -y \
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt && \
-    rm -rf /root/.cache/pip
+    playwright install chromium && \
+    playwright install-deps chromium
 
-# Install Playwright browsers and check installation path
-RUN playwright install chromium && \
-    playwright install-deps chromium && \
-    ls /root/.cache/ms-playwright/chromium-1105/chrome-linux/
-
-# Environment variables
-ENV PYTHONUNBUFFERED=1
+# Set environment variables
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-ENV PATH="/venv/bin:$PATH"
 
-# Set up application directory
+# Set working directory
 WORKDIR /app
 COPY . .
 
-# Set up entrypoint
-CMD ["python", "bot.py"]
+CMD ["python", "final_bot.py"]
