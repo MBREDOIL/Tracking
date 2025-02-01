@@ -33,30 +33,26 @@ class TrackBot(Client):
         self.playwright = None
         self.browser = None
         self.context = None
-    
 
     async def start(self):
         await super().start()
-    
-    # Ensure Playwright is properly initialized
-    self.playwright = await async_playwright().start()
-    
-    # Launch Chromium with explicit executable path
-    self.browser = await self.playwright.chromium.launch(
-        executable_path=os.getenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH")
-    )
-    
-    self.context = await self.browser.new_context()
-    await self.init_db()
-    self.setup_scheduler()
-    print("Bot Started!")
-    
+        # Ensure Playwright
+        self.playwright = await async_playwright().start()
+        # Launch Chromium with explicit executable path
+        self.browser = await self.playwright.chromium.launch(
+            executable_path=os.getenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH")
+        )
+        self.context = await self.browser.new_context()
+        await self.init_db()
+        await self.setup_scheduler()
+        print("Bot Started!")
+
     async def stop(self):
         await self.context.close()
         await self.browser.close()
         await self.playwright.stop()
         await super().stop()
-    
+
     async def init_db(self):
         async with aiosqlite.connect(DB_NAME) as db:
             await db.execute('''CREATE TABLE IF NOT EXISTS trackers(
@@ -70,38 +66,38 @@ class TrackBot(Client):
                 last_content TEXT,
                 next_check DATETIME,
                 status TEXT CHECK(status IN ('active', 'paused')) DEFAULT 'active')''')
-            
+
             await db.execute('''CREATE TABLE IF NOT EXISTS admins(
                 user_id INTEGER PRIMARY KEY,
                 role TEXT CHECK(role IN ('owner', 'admin')),
                 username TEXT,
                 added_by INTEGER,
                 added_at DATETIME DEFAULT CURRENT_TIMESTAMP)''')
-            
+
             await db.execute('''INSERT OR IGNORE INTO admins 
                              (user_id, role, username, added_by)
                              VALUES (?, ?, ?, ?)''',
                              (OWNER_ID, 'owner', 'Owner', OWNER_ID))
             await db.commit()
-    
+
     def setup_scheduler(self):
         async def scheduler():
             while True:
                 await asyncio.sleep(CHECK_INTERVAL)
                 await self.check_trackers()
-        
+
         self.loop.create_task(scheduler())
-    
+
     async def check_trackers(self):
         async with aiosqlite.connect(DB_NAME) as db:
             cursor = await db.execute('''SELECT * FROM trackers 
                                        WHERE status="active" 
                                        AND datetime(next_check) <= datetime('now')''')
             trackers = await cursor.fetchall()
-            
+
             for tracker in trackers:
                 tracker_id, url, user_id, mode, selector, interval, last_hash, last_content, next_check, status = tracker
-                
+
                 try:
                     data = await self.get_website_data(url, mode, selector)
                     if 'error' in data:
@@ -135,7 +131,7 @@ class TrackBot(Client):
                                           next_check=datetime('now', ? || ' seconds')
                                           WHERE id=?''',
                                           (interval, tracker_id))
-                    
+
                     await db.commit()
 
                 except Exception as e:
@@ -147,7 +143,7 @@ class TrackBot(Client):
             try:
                 await page.goto(url, timeout=60000)
                 await page.wait_for_load_state("networkidle")
-                
+
                 result = {}
                 if selector:
                     element = await page.query_selector(selector)
@@ -169,7 +165,7 @@ class TrackBot(Client):
                         response.raise_for_status()
                         html = await response.text()
                         soup = BeautifulSoup(html, 'html.parser')
-                        
+
                         if selector:
                             elements = soup.select(selector)
                             content = "\n".join([e.get_text() for e in elements])
@@ -197,7 +193,7 @@ async def add_admin(client: TrackBot, message: Message):
     if not await is_owner(message.from_user.id):
         await message.reply("❌ Owner access required!")
         return
-    
+
     try:
         target = message.command[1]
         if target.startswith("@"):
@@ -210,16 +206,16 @@ async def add_admin(client: TrackBot, message: Message):
                 user_id = user[0]
         else:
             user_id = int(target)
-        
+
         async with aiosqlite.connect(DB_NAME) as db:
             await db.execute('''INSERT OR REPLACE INTO admins 
                              (user_id, role, added_by) 
                              VALUES (?, ?, ?)''',
                              (user_id, 'admin', message.from_user.id))
             await db.commit()
-        
+
         await message.reply(f"✅ Admin added successfully!\nUser ID: {user_id}")
-    
+
     except (IndexError, ValueError):
         await message.reply("Usage: /addadmin [user_id/@username]")
 
@@ -228,18 +224,18 @@ async def remove_admin(client: TrackBot, message: Message):
     if not await is_owner(message.from_user.id):
         await message.reply("❌ Owner access required!")
         return
-    
+
     try:
         user_id = int(message.command[1])
         if user_id == OWNER_ID:
             return await message.reply("❌ Cannot remove owner!")
-        
+
         async with aiosqlite.connect(DB_NAME) as db:
             await db.execute('DELETE FROM admins WHERE user_id=?', (user_id,))
             await db.commit()
-        
+
         await message.reply(f"✅ Admin removed successfully!\nUser ID: {user_id}")
-    
+
     except (IndexError, ValueError):
         await message.reply("Usage: /removeadmin [user_id]")
 
@@ -249,22 +245,22 @@ async def tracker_control(client: TrackBot, message: Message):
     user_id = message.from_user.id
     if not await is_admin(user_id):
         return
-    
+
     args = message.command[1:]
     if len(args) < 2:
         return await message.reply("Usage: /control [url] [pause/resume/delete]")
-    
+
     url = args[0]
     action = args[1].lower()
-    
+
     async with aiosqlite.connect(DB_NAME) as db:
         cursor = await db.execute('SELECT id FROM trackers WHERE url=? AND user_id=?', 
                                 (url, user_id))
         tracker = await cursor.fetchone()
-        
+
         if not tracker:
             return await message.reply("❌ Tracker not found!")
-        
+
         if action == "pause":
             await db.execute('UPDATE trackers SET status="paused" WHERE id=?', (tracker[0],))
             msg = "⏸ Tracking paused"
@@ -276,9 +272,9 @@ async def tracker_control(client: TrackBot, message: Message):
             msg = "❌ Tracker deleted"
         else:
             return await message.reply("Invalid action! Use pause/resume/delete")
-        
+
         await db.commit()
-    
+
     await message.reply(f"✅ {msg}\nURL: {url}")
 
 # Helper Functions
