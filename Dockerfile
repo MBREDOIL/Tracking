@@ -14,20 +14,19 @@ RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
     unzip \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update -y \
-    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf \
+    && apt-get install -y google-chrome-stable \
     && rm -rf /var/lib/apt/lists/*
 
-# Install matching ChromeDriver
-RUN GOOGLE_CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f 1) \
-    && CHROMEDRIVER_DOWNLOAD_URL="https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/$GOOGLE_CHROME_VERSION.0.0.0/linux64/chromedriver-linux64.zip" \
-    && wget --no-verbose -O /tmp/chromedriver.zip "$CHROMEDRIVER_DOWNLOAD_URL" \
+# Install correct ChromeDriver using official method
+RUN CHROME_MAJOR_VERSION=$(google-chrome --version | awk -F '[ .]' '{print $3}') \
+    && CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_MAJOR_VERSION") \
+    && wget -q -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip" \
     && unzip /tmp/chromedriver.zip -d /usr/bin/ \
-    && mv /usr/bin/chromedriver-linux64/chromedriver /usr/bin/chromedriver \
     && chmod +x /usr/bin/chromedriver \
-    && rm -rf /usr/bin/chromedriver-linux64 /tmp/chromedriver.zip
+    && rm /tmp/chromedriver.zip
 
 WORKDIR /app
 COPY . .
