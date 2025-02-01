@@ -1,52 +1,27 @@
-# Use the official Python image from the Docker Hub
-FROM python:3.11-slim
+# Dockerfile
+FROM python:3.9-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED=1 \
+    API_ID="" \
+    API_HASH="" \
+    BOT_TOKEN="" \
+    OWNER_ID="" \
+    DB_NAME="tracker.db" \
+    CHECK_INTERVAL=300
 
-# Set the working directory
-WORKDIR /app
-
-# Copy the requirements file first
-COPY requirements.txt /app/requirements.txt
-
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    gcc \
-    libaio-dev \
-    libssl-dev \
-    libffi-dev \
-    wget \
-    gnupg \
-    unzip \
-    build-essential \
-    libjpeg-dev \
-    zlib1g-dev \
-    && apt-get clean \
+    wget unzip curl chromium chromium-driver \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-RUN pip install --upgrade pip
-
-# Install pre-built binary versions of problematic dependencies
-RUN pip install --only-binary :all: aiohttp==3.8.1
-
-# Install the remaining dependencies from requirements.txt
-RUN pip install -r requirements.txt
-
-# Install Chrome and WebDriver for Selenium
-RUN apt-get update && apt-get install -y \
-    google-chrome-stable \
-    && wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$(wget -q -O - https://chromedriver.storage.googleapis.com/LATEST_RELEASE)/chromedriver_linux64.zip \
-    && unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/ \
+RUN CHROME_VERSION=$(chromium --version | grep -oP '\d+\.\d+\.\d+') \
+    && CHROMEDRIVER_VERSION=$(curl -s https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION%.*}) \
+    && wget -q -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip \
+    && unzip /tmp/chromedriver.zip -d /usr/bin/ \
     && rm /tmp/chromedriver.zip \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && chmod +x /usr/bin/chromedriver
 
-# Copy the bot source code
-COPY . /app
+WORKDIR /app
+COPY . .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Set the entrypoint command to run the bot
 CMD ["python", "bot.py"]
-
