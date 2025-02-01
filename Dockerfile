@@ -20,10 +20,13 @@ RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
     unzip \
+    build-essential \
+    libjpeg-dev \
+    zlib1g-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Cython and aiohttp dependencies first
+# Install Python dependencies
 RUN pip install --upgrade pip
 RUN pip install Cython==0.29.24 multidict==5.1.0 yarl==1.6.3
 
