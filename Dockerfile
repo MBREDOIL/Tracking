@@ -1,6 +1,6 @@
 FROM python:3.11-slim-bullseye
 
-# Install system dependencies
+# 1. Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
@@ -21,21 +21,25 @@ RUN apt-get update && apt-get install -y \
     libgbm1 \
     libgtk-3-0 \
     libasound2 \
+    libharfbuzz-icu0 \
+    libgles2 \
+    libegl1 \
     fonts-noto \
     fonts-noto-cjk \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# 2. Install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt && \
-    playwright install chromium && \
-    playwright install-deps chromium
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Set environment variables
+# 3. Install Playwright with proper chromium installation
+RUN playwright install --with-deps chromium
+
+# 4. Set environment variables
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-# Set working directory
+# 5. Configure working directory
 WORKDIR /app
 COPY . .
 
-CMD ["python", "bot.py"]
+CMD ["python", "final_bot.py"]
