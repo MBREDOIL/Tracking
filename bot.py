@@ -13,10 +13,10 @@ from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
 # Configuration
-API_ID = 1234567
-API_HASH = "your_api_hash"
+API_ID = "22182189"
+API_HASH = "5e7c4088f8e23d0ab61e29ae11960bf5"
 BOT_TOKEN = "your_bot_token"
-OWNER_ID = 123456789
+OWNER_ID = 6556141430
 DB_NAME = "pyro_tracker.db"
 CHECK_INTERVAL = 30  # seconds
 
