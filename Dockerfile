@@ -1,45 +1,33 @@
-FROM python:3.11-slim-bullseye
+# Use the official Python image from the Docker Hub
+FROM python:3.11-slim
 
-# 1. Install system dependencies
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Install dependencies
+COPY requirements.txt /app/requirements.txt
+WORKDIR /app
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+# Install Chrome and WebDriver for Selenium
 RUN apt-get update && apt-get install -y \
-    curl \
+    wget \
     gnupg \
-    git \
-    gcc \
-    g++ \
-    libglib2.0-0 \
-    libnss3 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libcups2 \
-    libdrm2 \
-    libxkbcommon0 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxrandr2 \
-    libgbm1 \
-    libgtk-3-0 \
-    libasound2 \
-    libharfbuzz-icu0 \
-    libgles2 \
-    libegl1 \
-    fonts-noto \
-    fonts-noto-cjk \
+    unzip \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' \
+    && apt-get update && apt-get install -y \
+    google-chrome-stable \
+    && wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$(wget -q -O - https://chromedriver.storage.googleapis.com/LATEST_RELEASE)/chromedriver_linux64.zip \
+    && unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/ \
+    && rm /tmp/chromedriver.zip \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy the bot source code
+COPY . /app
 
-# 3. Install Playwright with proper chromium installation
-RUN playwright install --with-deps chromium
-
-# 4. Set environment variables
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-
-# 5. Configure working directory
-WORKDIR /app
-COPY . .
-
+# Set the entrypoint command to run the bot
 CMD ["python", "bot.py"]
