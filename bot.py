@@ -91,7 +91,7 @@ app = TrackBot()
 # Helper Functions
 async def get_website_data(url: str, mode: str, selector: str = None):
     if mode == 'element':
-        page =.new_page()
+        page = await app.context.new_page()
         try:
             await page.goto(url, timeout=60000)
             await page.wait_for_load_state("networkidle")
