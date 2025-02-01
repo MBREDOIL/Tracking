@@ -8,32 +8,30 @@ ENV PYTHONUNBUFFERED=1 \
     DB_NAME="tracker.db" \
     CHECK_INTERVAL=300
 
-# Install system dependencies with clean up
+# Install Chrome and dependencies
 RUN apt-get update && apt-get install -y \
     wget \
-    unzip \
     curl \
     gnupg \
-    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    unzip \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update && apt-get install -y \
-    google-chrome-stable \
+    && apt-get update -y \
+    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf \
     && rm -rf /var/lib/apt/lists/*
 
-# Install ChromeDriver matching Chrome version
-RUN CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d. -f1) \
-    && echo "Chrome Version: $CHROME_VERSION" \
-    && CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION") \
-    && echo "ChromeDriver Version: $CHROMEDRIVER_VERSION" \
-    && wget -q -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip" \
+# Install matching ChromeDriver
+RUN GOOGLE_CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f 1) \
+    && CHROMEDRIVER_DOWNLOAD_URL="https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/$GOOGLE_CHROME_VERSION.0.0.0/linux64/chromedriver-linux64.zip" \
+    && wget --no-verbose -O /tmp/chromedriver.zip "$CHROMEDRIVER_DOWNLOAD_URL" \
     && unzip /tmp/chromedriver.zip -d /usr/bin/ \
-    && rm /tmp/chromedriver.zip \
-    && chmod +x /usr/bin/chromedriver
+    && mv /usr/bin/chromedriver-linux64/chromedriver /usr/bin/chromedriver \
+    && chmod +x /usr/bin/chromedriver \
+    && rm -rf /usr/bin/chromedriver-linux64 /tmp/chromedriver.zip
 
 WORKDIR /app
 COPY . .
 
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 CMD ["python", "bot.py"]
