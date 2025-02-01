@@ -15,10 +15,10 @@ from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
 
 # Configuration
-API_ID = int(os.getenv("API_ID", 1234567))
-API_HASH = os.getenv("API_HASH", "your_api_hash")
-BOT_TOKEN = os.getenv("BOT_TOKEN", "your_bot_token")
-OWNER_ID = int(os.getenv("OWNER_ID", 123456789))
+API_ID = int(os.getenv("API_ID", 22182189))
+API_HASH = os.getenv("API_HASH", "5e7c4088f8e23d0ab61e29ae11960bf5")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
+OWNER_ID = int(os.getenv("OWNER_ID", 6556141430))
 DB_NAME = os.getenv("DB_NAME", "tracker.db")
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", 30))
 
