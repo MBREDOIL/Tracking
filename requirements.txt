@@ -1,4 +1,4 @@
-python-telegram-bot[v20,job-queue]==20.5
+pyrogram 
 playwright==1.42.0
 aiohttp==3.9.3
 aiosqlite==0.20.0
