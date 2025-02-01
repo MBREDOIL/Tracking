@@ -36,7 +36,7 @@ class TrackBot(Client):
     
 
     async def start(self):
-    await super().start()
+        await super().start()
     
     # Ensure Playwright is properly initialized
     self.playwright = await async_playwright().start()
